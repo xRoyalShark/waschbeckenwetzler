@@ -135,10 +135,12 @@
 
     <p class="info">
       Du kannst alle <span class="highlight">5 Minuten</span> ein weiteres Waschbecken zerwetzln.
+      (Zähler ist lokal in deinem Browser gespeichert.)
     </p>
   </div>
 
   <script>
+    // Einstellungen
     const COOLDOWN_MINUTES = 5;
     const COOLDOWN_MS = COOLDOWN_MINUTES * 60 * 1000;
 
@@ -168,4 +170,53 @@
 
     function formatTime(ms) {
       const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-      const min
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')} min`;
+    }
+
+    function getRemainingCooldown(lastClick) {
+      if (!lastClick) return 0;
+      const elapsed = Date.now() - lastClick;
+      const remaining = COOLDOWN_MS - elapsed;
+      return remaining > 0 ? remaining : 0;
+    }
+
+    function updateUI() {
+      const state = loadState();
+      countEl.textContent = state.count;
+
+      const remaining = getRemainingCooldown(state.lastClick);
+
+      if (remaining > 0) {
+        btn.disabled = true;
+        cooldownEl.textContent = `Du musst noch ${formatTime(remaining)} warten, bevor du das nächste Waschbecken zerwetzln kannst.`;
+      } else {
+        btn.disabled = false;
+        cooldownEl.textContent = 'Du kannst jetzt ein Waschbecken zerwetzln.';
+      }
+    }
+
+    btn.addEventListener('click', () => {
+      const state = loadState();
+      const remaining = getRemainingCooldown(state.lastClick);
+
+      if (remaining > 0) {
+        // Sollte eigentlich nicht passieren, falls UI korrekt ist
+        updateUI();
+        return;
+      }
+
+      const newCount = state.count + 1;
+      const now = Date.now();
+      saveState(newCount, now);
+      updateUI();
+    });
+
+    // Initialer Aufruf
+    updateUI();
+    // Cooldown-Anzeige jede Sekunde aktualisieren
+    setInterval(updateUI, 1000);
+  </script>
+</body>
+</html>
